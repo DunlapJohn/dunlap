@@ -8,15 +8,16 @@ import psycopg2
 
 
 
-
+ 
 
 DB_NAME = "d9k0a7aiggrtae"
 DB_USER = "emyiazqpbkpsib"
 DB_HOST = "qec2-52-206-182-219.compute-1.amazonaws.com"
 DB_PASS = "ae0b97784400b039cb892b3c09b8f07ffff163e00fb18251de127ef0e8c54907"
+DB_PORT = 5342
 
 
-conn = psycopg2.connect(database = DB_NAME, user = DB_USER, password = DB_PASS, host = DB_HOST)
+conn = psycopg2.connect(database = DB_NAME, user = DB_USER, password = DB_PASS, host = DB_HOST, port =DB_PORT)
 
 cur = conn.cursor()
 engine = create_engine('postgres://emyiazqpbkpsib:ae0b97784400b039cb892b3c09b8f07ffff163e00fb18251de127ef0e8c54907@ec2-52-206-182-219.compute-1.amazonaws.com:5432/d9k0a7aiggrtae')
