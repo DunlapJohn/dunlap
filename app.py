@@ -1,7 +1,5 @@
 import pandas as pd
-import matplotlib.pyplot as plt
 import time
-from mpldatacursor import datacursor
 import datetime
 import mango
 import streamlit as st
@@ -11,50 +9,48 @@ import psycopg2
 
 
 
-DB_NAME = "bldpmfro"
-DB_USER = "bldpmfro"
-DB_HOST = "queenie.db.elephantsql.com"
-DB_PASS = "vTgtl5oHo0l5Ct2huCLEYjEvkJkfwUuG"
+
+DB_NAME = "d9k0a7aiggrtae"
+DB_USER = "emyiazqpbkpsib"
+DB_HOST = "qec2-52-206-182-219.compute-1.amazonaws.com"
+DB_PASS = "ae0b97784400b039cb892b3c09b8f07ffff163e00fb18251de127ef0e8c54907"
 
 
-
-
-conn = psycopg2.connect(database = DB_NAME, user = DB_USER, password = DB_PASS, host = DB_HOST )
+conn = psycopg2.connect(database = DB_NAME, user = DB_USER, password = DB_PASS, host = DB_HOST)
 
 cur = conn.cursor()
-engine = create_engine('postgresql://bldpmfro:vTgtl5oHo0l5Ct2huCLEYjEvkJkfwUuG@queenie.db.elephantsql.com/bldpmfro')
+engine = create_engine('postgres://emyiazqpbkpsib:ae0b97784400b039cb892b3c09b8f07ffff163e00fb18251de127ef0e8c54907@ec2-52-206-182-219.compute-1.amazonaws.com:5432/d9k0a7aiggrtae')
 con = engine.connect()
 
 print('Database Connected Successfully')
 
-# cur.execute('Drop Table orderbook')
 # cur.execute('Drop Table btc')
 # print('Table Dropped Successfully')
 
-cur.execute("""
-          CREATE TABLE orderbook
-          (index int not null,
-          Date TIMESTAMP not null,
-          price char(64) not null,
-          Size float not null,
-          Taker char(64) NOT NULL,
-          Maker char(64) NOT NULL
+# cur.execute("""
+#           CREATE TABLE orderbook
+#           (index int not null,
+#           Date TIMESTAMP not null,
+#           price char(64) not null,
+#           Size float not null,
+#           Taker char(64) NOT NULL,
+#           Maker char(64) NOT NULL
         
-          ) 
-            """)
+#           ) 
+#             """)
 
-conn.commit()    
+# conn.commit()    
   
-cur.execute("""
-          CREATE TABLE btc
-          (ID serial primary key,
-          Date TIMESTAMP NOT NULL, 
-          PRICE decimal NOT NULL,
-          OI decimal NOT NULL
-          ) 
-            """)
-conn.commit()  
-print('Database tables created Successfully')
+# cur.execute("""
+#           CREATE TABLE btc
+#           (ID serial primary key,
+#           Date TIMESTAMP NOT NULL, 
+#           PRICE decimal NOT NULL,
+#           OI decimal NOT NULL
+#           ) 
+#             """)
+# conn.commit()  
+# print('Database tables created Successfully')
 
 stop_requested = False
 while not stop_requested:
@@ -116,7 +112,6 @@ while not stop_requested:
                     Query = ("select * from orderbook")
                     cur.execute(Query)
                     data = cur.fetchall()
-                    st.write(data)
                     data=pd.DataFrame(data)
                     data[1] = pd.to_datetime(data[1])
                     
@@ -124,33 +119,8 @@ while not stop_requested:
                     # data = data.loc[data['y']==1]
                 
                     data = data.sort_values([2,1], ascending=[True,True])
-                    st.write(data)
                     
-                    x=data[1]
-                    y=data[2]
-                    # Ploting Order Book Data
-                    fig, ax1 = plt.subplots(1, figsize=(12,6))
-                    
-                    fig.set_size_inches(16.5, 8.5)
-                    lines = ax1.scatter(x,y, label ="Maker")
-                    ax1.set_xlabel('date')
-                    ax1.set_ylabel('price')
-                    datacursor(lines)
-                    st.pyplot(fig)
-                    
-                    data=pd.DataFrame(data)
-                    data1=data.groupby([4])[2].sum()
-                    data2=data.groupby([5])[2].sum()
-                    data2 = data2.astype('string')
 
-                    fig, ax1 = plt.subplots(1, figsize=(12,6))
-                    
-                    fig.set_size_inches(16.5, 8.5)
-                    lines = ax1.scatter(x,y, label ="Maker")
-                    ax1.set_xlabel('date')
-                    ax1.set_ylabel('price')
-                    datacursor(lines)
-                    st.pyplot(fig)
                     
                     
                 
@@ -165,9 +135,7 @@ while not stop_requested:
                     pause_seconds = 10
                     perp_market = mango.PerpMarket.ensure(mango.market(context, 'BTC-PERP'))   
                     market = perp_market.fetch_funding(context)
-                    st.write(market)
                     market = pd.DataFrame([market])
-                    st.table(market)
                     market['open_interest_BTC']=market['open_interest'].apply(pd.to_numeric, errors='coerce')
                     market['oracle_price']=market['oracle_price'].apply(pd.to_numeric, errors='coerce')
                     market['open_interest']=market['oracle_price']*market['open_interest_BTC']
@@ -195,7 +163,27 @@ while not stop_requested:
                 print('BTC data inserted successfully')
                 print(f"Pausing for {pause_seconds} seconds.\n")
                 time.sleep(pause_seconds)
-            
+
+                def orders():
+                    conn = psycopg2.connect(database = DB_NAME, user = DB_USER, password = DB_PASS, host = DB_HOST )
+                    cur = conn.cursor()
+                    cur.execute("SELECT * FROM orderbook")
+                    rows = cur.fetchall()
+                    order = rows
+                    order = pd.DataFrame(order)
+                    order.rename(columns = {0:'Index',1:'Date', 2:'Price', 3:'Size',4:'Maker', 5:'Taker'}, inplace = True)
+                    order=order.drop_duplicates( keep=False)
+                    order['Taker'] = order['Taker'].str.strip()
+                    order['Date'].unique()
+                    order['Price'] =order['Price'].str.replace(',','')
+                    order['Price']= order['Price'].astype(float)
+                    order['Price'].astype(int)
+                    order['USD_Size'] = order['Size']*order['Price']
+                    return order
+
+                order=orders()
+                st.write(order)
+                print('Dataframe Successfully Organized')
             
             
         except KeyboardInterrupt:
